@@ -1,0 +1,8 @@
+{
+    "EntrypointInputSourceFile": "/Users/steven/Code/retold/modules/pict/pict-section-dataimport/example_applications/archive_import/source/Pict-Application-ArchiveImport.js",
+    "LibraryObjectName": "ArchiveImport",
+    "LibraryOutputFolder": "/Users/steven/Code/retold/modules/pict/pict-section-dataimport/example_applications/archive_import/dist/",
+    "LibraryUniminifiedFileName": "archive_import.compatible.js",
+    "LibraryMinifiedFileName": "archive_import.compatible.min.js",
+    "BrowserifyIgnore": []
+}

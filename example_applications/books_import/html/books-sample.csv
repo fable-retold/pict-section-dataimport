@@ -1,0 +1,6 @@
+id,title,authors,isbn,language_code,image_url,original_publication_year
+9001,The Silent Cartographer,"Marcus Vale, Lena Ortiz",9780000090010,eng,http://example.com/9001.jpg,2014
+9002,Tidewater Bells,Priya Nadar,9780000090027,eng,http://example.com/9002.jpg,2009
+9003,The Lantern Lakes,"J. R. Holloway, Marcus Vale",9780000090034,en-US,http://example.com/9003.jpg,2018
+9004,Quiet Machines,Tomas Beck,9780000090041,deu,http://example.com/9004.jpg,2021
+9005,Field Notes on Falling,"Lena Ortiz",9780000090058,eng,http://example.com/9005.jpg,2016

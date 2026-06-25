@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Books Import - pict-section-dataimport</title>
+		<link rel="stylesheet" href="./css/books-import.css" />
+		<style id="PICT-CSS"></style>
+		<script src="./js/pict.min.js" type="text/javascript"></script>
+		<script type="text/javascript">
+//<![CDATA[
+		Pict.safeOnDocumentReady(() => { Pict.safeLoadPictApplication(BooksImport, 2); });
+//]]>
+		</script>
+	</head>
+	<body>
+		<div class="demo-wrap">
+			<h1>Books Import</h1>
+			<p class="demo-sub">Import a books CSV into the bookstore harness — upload → validate → map → generate → push. One CSV row fans out into a Book, its Authors, and the Book↔Author joins.</p>
+			<p class="demo-hint">Sample CSV: <a href="./books-sample.csv" download>books-sample.csv</a> (columns: id, title, authors, isbn, language_code, image_url).</p>
+			<div id="BooksImport"></div>
+			<div id="Readout" class="demo-readout"></div>
+		</div>
+		<script src="./books_import.compatible.min.js" type="text/javascript"></script>
+	</body>
+</html>

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Archive.org Import - pict-section-dataimport</title>
+		<link rel="stylesheet" href="./css/archive-import.css" />
+		<style id="PICT-CSS"></style>
+		<script src="./js/pict.min.js" type="text/javascript"></script>
+		<script type="text/javascript">
+//<![CDATA[
+		Pict.safeOnDocumentReady(() => { Pict.safeLoadPictApplication(ArchiveImport, 2); });
+//]]>
+		</script>
+	</head>
+	<body>
+		<div class="demo-wrap">
+			<h1>Archive.org Import</h1>
+			<p class="demo-sub">Generate <strong>Archive.org-shaped</strong> comprehensions from a CSV — a complex, non-Meadow schema defined entirely in app config. Each item fans out into an <code>ArchiveItem</code>, its <code>ArchiveCollection</code>s, and the item↔collection joins (the shape of an <a href="https://archive.org" target="_blank" rel="noopener">archive.org</a> item, like the General Mills Monster Cereals commercials). No live server: generate, preview, and download the comprehension JSON.</p>
+			<p class="demo-hint">Sample CSV: <a href="./archive-items-sample.csv" download>archive-items-sample.csv</a></p>
+			<div id="ArchiveImport"></div>
+			<div id="Readout" class="demo-readout"></div>
+		</div>
+		<script src="./archive_import.compatible.min.js" type="text/javascript"></script>
+	</body>
+</html>

@@ -1,0 +1,8 @@
+{
+    "EntrypointInputSourceFile": "/Users/steven/Code/retold/modules/pict/pict-section-dataimport/source/Pict-Section-DataImport.js",
+    "LibraryObjectName": "PictSectionDataimport",
+    "LibraryOutputFolder": "/Users/steven/Code/retold/modules/pict/pict-section-dataimport/dist/",
+    "LibraryUniminifiedFileName": "pict-section-dataimport.compatible.js",
+    "LibraryMinifiedFileName": "pict-section-dataimport.compatible.min.js",
+    "BrowserifyIgnore": []
+}

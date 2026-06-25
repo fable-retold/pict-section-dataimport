@@ -1,0 +1,80 @@
+{
+	"name": "pict-section-dataimport",
+	"version": "1.0.0",
+	"description": "Embeddable, configurable data-import wizard for Pict apps — upload a CSV/TSV/Excel/fixed-width file, validate + detect its schema, map columns to a Meadow (or host-config) entity schema, generate comprehensions, and push them (records via the browser EntityProvider, or one POST to a Comprehension endpoint). Composes pict-section-upload + pict-section-accordion + pict-section-form, reusing meadow-integration's browser-safe transform/push engine.",
+	"main": "source/Pict-Section-DataImport.js",
+	"files": [
+		"source"
+	],
+	"scripts": {
+		"test": "npx mocha -u tdd -R spec",
+		"tests": "npx mocha -u tdd -R spec -g",
+		"start": "node source/Pict-Section-DataImport.js",
+		"coverage": "./node_modules/.bin/nyc --reporter=lcov --reporter=text-lcov ./node_modules/mocha/bin/_mocha -- -u tdd -R spec",
+		"build": "npx quack build"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/fable-retold/pict-section-dataimport.git"
+	},
+	"author": "steven velozo <steven@velozo.com>",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/fable-retold/pict-section-dataimport/issues"
+	},
+	"homepage": "https://github.com/fable-retold/pict-section-dataimport#readme",
+	"mocha": {
+		"diff": true,
+		"extension": [
+			"js"
+		],
+		"package": "./package.json",
+		"reporter": "spec",
+		"slow": "200",
+		"timeout": "10000",
+		"ui": "tdd",
+		"watch-files": [
+			"source/**/*.js",
+			"test/**/*.js"
+		]
+	},
+	"dependencies": {
+		"fable-serviceproviderbase": "^3.0.19",
+		"pict-provider": "^1.0.13",
+		"pict-view": "^1.0.68"
+	},
+	"peerDependencies": {
+		"meadow-integration": ">=1.0.43",
+		"pict": ">=1.0.300",
+		"pict-section-accordion": ">=1.0.0",
+		"pict-section-form": ">=1.0.0",
+		"pict-section-modal": ">=1.0.0",
+		"pict-section-recordset": ">=1.0.0",
+		"pict-section-upload": ">=1.0.0",
+		"xlsx": ">=0.18.0"
+	},
+	"peerDependenciesMeta": {
+		"pict-section-form": {
+			"optional": true
+		},
+		"pict-section-recordset": {
+			"optional": true
+		},
+		"pict-section-modal": {
+			"optional": true
+		},
+		"xlsx": {
+			"optional": true
+		}
+	},
+	"devDependencies": {
+		"@types/mocha": "^10.0.10",
+		"@types/node": "^16.18.126",
+		"browser-env": "^3.3.0",
+		"chai": "^4.3.10",
+		"mocha": "^10.4.0",
+		"pict": "^1.0.373",
+		"pict-application": "^1.0.34",
+		"quackage": "^1.3.0"
+	}
+}

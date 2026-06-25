@@ -1,0 +1,8 @@
+{
+    "EntrypointInputSourceFile": "/Users/steven/Code/retold/modules/pict/pict-section-dataimport/example_applications/books_import/source/Pict-Application-BooksImport.js",
+    "LibraryObjectName": "BooksImport",
+    "LibraryOutputFolder": "/Users/steven/Code/retold/modules/pict/pict-section-dataimport/example_applications/books_import/dist/",
+    "LibraryUniminifiedFileName": "books_import.compatible.js",
+    "LibraryMinifiedFileName": "books_import.compatible.min.js",
+    "BrowserifyIgnore": []
+}
