@@ -14,11 +14,32 @@
 		"pict-application": "^1.0.34",
 		"pict-view": "^1.0.68"
 	},
-	"devDependencies": { "quackage": "^1.3.0" },
-	"copyFilesSettings": { "whenFileExists": "overwrite" },
+	"devDependencies": {
+		"quackage": "^1.3.0"
+	},
+	"copyFilesSettings": {
+		"whenFileExists": "overwrite"
+	},
 	"copyFiles": [
-		{ "from": "./html/*", "to": "./dist/" },
-		{ "from": "./css/**", "to": "./dist/css/" },
-		{ "from": "./node_modules/pict/dist/*", "to": "./dist/js/" }
-	]
+		{
+			"from": "./html/*",
+			"to": "./dist/"
+		},
+		{
+			"from": "./css/**",
+			"to": "./dist/css/"
+		},
+		{
+			"from": "./node_modules/pict/dist/*",
+			"to": "./dist/js/"
+		}
+	],
+	"retold": {
+		"ExampleApplication": {
+			"Stage": true,
+			"Title": "Archive.org Import",
+			"Summary": "pict-section-dataimport: generate Archive.org-shaped comprehensions (item / collection / join) from a CSV -- complex non-Meadow schema in app config, no server needed.",
+			"Complexity": "Intermediate"
+		}
+	}
 }

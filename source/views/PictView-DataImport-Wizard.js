@@ -205,7 +205,13 @@ class PictViewDataImportWizard extends libPictView
 	onAfterRender(pRenderable)
 	{
 		if (this.pict.CSSMap && typeof this.pict.CSSMap.injectCSS === 'function') { this.pict.CSSMap.injectCSS(); }
-		if (!this._wired)
+		// Build the accordion + step bodies on first render, and REBUILD whenever a host re-render has wiped
+		// our mount. When the wizard is embedded in a routed host that repaints its container (on navigation,
+		// or after a push), the DI-Root template recreates an EMPTY `#DI_Acc_<WizardHash>` while `_wired` stays
+		// true — which would otherwise leave a bare accordion shell. createAccordion / createUploader are keyed
+		// by hash (reconfigure-or-create) and the accordion keeps its serializable nav state, so the rebuild
+		// restores the current step + the host's step bodies without losing progress.
+		if (!this._wired || !this._accordionMounted())
 		{
 			this._wired = true;
 			this._buildWizard();
@@ -213,7 +219,21 @@ class PictViewDataImportWizard extends libPictView
 		return super.onAfterRender(pRenderable);
 	}
 
-	/** One-time: create the accordion + upload view, render all step bodies. */
+	/**
+	 * Is the accordion currently rendered into its mount, or has a host re-render wiped it? The DI-Root
+	 * template recreates an empty `#DI_Acc_<WizardHash>` on every paint, so an empty mount means the
+	 * accordion (and its step bodies) need (re)building.
+	 * @return {boolean}
+	 */
+	_accordionMounted()
+	{
+		// No DOM to inspect (server-side render) — defer to the `_wired` one-time gate.
+		if (typeof document === 'undefined') { return true; }
+		const tmpElement = document.getElementById(`DI_Acc_${this.options.WizardHash}`);
+		return !!(tmpElement && tmpElement.children && (tmpElement.children.length > 0));
+	}
+
+	/** Create the accordion + upload view and render all step bodies; safe to re-run (idempotent rebuild). */
 	_buildWizard()
 	{
 		const tmpAccordionProvider = this.pict.providers['Pict-Section-Accordion'];

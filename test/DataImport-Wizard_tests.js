@@ -30,6 +30,14 @@ const newProvider = () =>
 	return tmpPict.addProvider('Pict-Section-DataImport', libPictSectionDataImport.default_configuration, libPictSectionDataImport);
 };
 
+// A provider whose pict writes to the real (jsdom) DOM — used to exercise the mount / re-mount behavior
+// the stubbed ContentAssignment above can't observe.
+const newProviderRealDOM = () =>
+{
+	const tmpPict = new libPict({ LogStreams: [ { loggertype: 'console', streamtype: 'console', level: 'error' } ] });
+	return tmpPict.addProvider('Pict-Section-DataImport', libPictSectionDataImport.default_configuration, libPictSectionDataImport);
+};
+
 const CONFIG_SCHEMA =
 {
 	Order: [ 'Customer', 'Invoice' ],
@@ -119,6 +127,43 @@ suite
 					Expect(pSchema.Entities[0].GUIDName).to.equal('GUIDCustomer');
 					return fDone();
 				}).catch(fDone);
+			}
+		);
+		test
+		(
+			'_accordionMounted() reports false for a wiped (empty) mount and true once populated',
+			(fDone) =>
+			{
+				const tmpProvider = newProviderRealDOM();
+				const tmpWizard = tmpProvider.createImportWizard('ImpMount', { SchemaSource: 'config', Schema: CONFIG_SCHEMA, PushMode: 'comprehension' });
+				document.body.innerHTML = '<div id="DI_Acc_ImpMount"></div>';
+				Expect(tmpWizard._accordionMounted(), 'empty mount').to.equal(false);
+				document.getElementById('DI_Acc_ImpMount').innerHTML = '<div class="accordion-chrome"></div>';
+				Expect(tmpWizard._accordionMounted(), 'populated mount').to.equal(true);
+				return fDone();
+			}
+		);
+		test
+		(
+			'a host re-render rebuilds the accordion instead of leaving an empty shell',
+			(fDone) =>
+			{
+				const tmpProvider = newProviderRealDOM();
+				document.body.innerHTML = '<div id="WizMount"></div>';
+				const tmpWizard = tmpProvider.createImportWizard('ImpRemount',
+					{ SchemaSource: 'config', Schema: CONFIG_SCHEMA, PushMode: 'comprehension', RenderMode: 'wizard', DestinationAddress: '#WizMount' });
+
+				tmpWizard.render();
+				const tmpMount = () => document.getElementById('DI_Acc_ImpRemount');
+				Expect(tmpMount(), 'accordion mount exists on first render').to.not.equal(null);
+				Expect(tmpMount().children.length, 'accordion chrome built on first render').to.be.greaterThan(0);
+
+				// A routed host repaints its container: the wizard's DI-Root renderable (RenderMethod
+				// 'replace') re-emits an EMPTY #DI_Acc — pre-fix this stayed empty (the _wired latch).
+				tmpWizard.render();
+				Expect(tmpMount(), 'accordion mount still present after re-render').to.not.equal(null);
+				Expect(tmpMount().children.length, 'accordion rebuilt after the host re-render').to.be.greaterThan(0);
+				return fDone();
 			}
 		);
 	}
