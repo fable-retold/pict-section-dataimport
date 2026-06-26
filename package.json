@@ -1,6 +1,6 @@
 {
 	"name": "pict-section-dataimport",
-	"version": "1.0.1",
+	"version": "1.1.0",
 	"description": "Embeddable, configurable data-import wizard for Pict apps — upload a CSV/TSV/Excel/fixed-width file, validate + detect its schema, map columns to a Meadow (or host-config) entity schema, generate comprehensions, and push them (records via the browser EntityProvider, or one POST to a Comprehension endpoint). Composes pict-section-upload + pict-section-accordion + pict-section-form, reusing meadow-integration's browser-safe transform/push engine.",
 	"main": "source/Pict-Section-DataImport.js",
 	"files": [
@@ -44,7 +44,7 @@
 		"pict-view": "^1.0.68"
 	},
 	"peerDependencies": {
-		"meadow-integration": ">=1.0.43",
+		"meadow-integration": ">=1.1.1",
 		"pict": ">=1.0.300",
 		"pict-section-accordion": ">=1.0.0",
 		"pict-section-form": ">=1.0.0",

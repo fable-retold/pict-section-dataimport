@@ -70,4 +70,15 @@ module.exports = /*css*/`
 .psd-progress { height: 8px; border-radius: var(--theme-radius-pill, 999px); overflow: hidden; background: var(--theme-color-background-tertiary, #e9edf2); }
 .psd-progress-fill { height: 100%; background: var(--theme-color-brand-primary, #156dd1); transition: width var(--theme-duration-normal, 0.2s) ease; }
 .psd-row-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+
+.psd-guid { display: flex; flex-direction: column; gap: 0.4rem; margin: 0.3rem 0 0.6rem; padding: 0.5rem 0.65rem;
+	border: 1px solid var(--theme-color-border-light, #e6e9ee); border-radius: var(--theme-radius-md, 6px); background: var(--theme-color-background-secondary, #f7f9fb); }
+.psd-guid-line { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.psd-guid-label { font-size: var(--theme-typography-size-sm, 0.82rem); font-weight: 600; color: var(--theme-color-text-primary, #1f2733); }
+.psd-guid-sub { font-size: var(--theme-typography-size-sm, 0.8rem); color: var(--theme-color-text-secondary, #6b7686); }
+.psd-guid-parent { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; padding-left: 0.5rem; }
+.psd-guid-rm { padding: 0 0.45rem; line-height: 1.4; }
+.psd-guid-add { padding-left: 0.5rem; }
+.psd-guid-preview { font-size: var(--theme-typography-size-sm, 0.82rem); color: var(--theme-color-text-secondary, #6b7686); }
+.psd-guid-warn { display: flex; align-items: center; gap: 0.4rem; font-size: var(--theme-typography-size-sm, 0.82rem); color: var(--theme-color-status-warning, #b8860b); }
 `;

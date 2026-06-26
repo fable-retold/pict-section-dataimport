@@ -70,6 +70,15 @@ class PictProviderDataImport extends libPictProvider
 			pConfig || {},
 			{ WizardHash: pWizardHash });
 
+		// When a context-aware GUID strategy is active the composer owns the ENTIRE GUID (the desired
+		// `UI_..._...` format is not the engine's prefix-marshal format), so the marshaling prefixes must
+		// be empty — otherwise the push would double-prefix the already-composed GUID.
+		if (tmpConfig.GUIDStrategy)
+		{
+			tmpConfig.GUIDPrefix = '';
+			tmpConfig.EntityGUIDPrefix = '';
+		}
+
 		// Resolve the seams onto the config — the wizard view reads these directly.
 		tmpConfig.ResolvedParsers = this._resolveParsers(tmpConfig);
 		tmpConfig.ResolvedSchemaProvider = this._resolveSchemaProvider(tmpConfig);

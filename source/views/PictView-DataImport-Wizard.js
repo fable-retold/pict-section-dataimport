@@ -1,5 +1,6 @@
 const libPictView = require('pict-view');
 const libSession = require('../services/DataImport-Session.js');
+const libStrategyApply = require('../services/DataImport-GuidStrategyApply.js');
 
 // Required sibling controls (peers). The wizard registers their providers if the host hasn't.
 const libPictSectionAccordion = require('pict-section-accordion');
@@ -93,10 +94,31 @@ const _DEFAULT_CONFIGURATION =
 			Hash: 'DI-Map-Entity',
 			Template: /*html*/`
 <div class="psd-entity">
-	<div class="psd-entity-head"><span class="psd-entity-name">{~D:Record.Entity~}</span><span class="psd-entity-count">GUID: <span class="psd-mono">{~D:Record.GUIDTemplate~}</span></span></div>
+	<div class="psd-entity-head"><span class="psd-entity-name">{~D:Record.Entity~}</span>{~TS:DI-Map-GUID-Legacy:Record.LegacyGUIDSlot~}</div>
+	{~TS:DI-GUID-Panel:Record.StrategySlot~}
 	{~TS:DI-Map-Row:Record.Fields~}
 </div>`
 		},
+		{ Hash: 'DI-Map-GUID-Legacy', Template: /*html*/`<span class="psd-entity-count">GUID: <span class="psd-mono">{~D:Record.GUIDTemplate~}</span></span>` },
+		{
+			Hash: 'DI-GUID-Panel',
+			Template: /*html*/`
+<div class="psd-guid">
+	<div class="psd-guid-line"><span class="psd-guid-label">Identifier</span><select class="psd-select" onchange="_Pict.views['{~D:Record.WizardHash~}'].setStrategyMode('{~D:Record.Entity~}',this.value)">{~TS:DI-Opt:Record.ModeOptions~}</select>{~TS:DI-GUID-OwnKey:Record.OwnKeySlot~}</div>
+	{~TS:DI-GUID-Parent:Record.Parents~}
+	{~TS:DI-GUID-AddParent:Record.AddParentSlot~}
+	{~TS:DI-GUID-Preview:Record.PreviewSlot~}
+	{~TS:DI-GUID-Warn:Record.Warnings~}
+</div>`
+		},
+		{ Hash: 'DI-GUID-OwnKey', Template: /*html*/`<span class="psd-guid-sub">keyed by</span><select class="psd-select" onchange="_Pict.views['{~D:Record.WizardHash~}'].setStrategyOwnKey('{~D:Record.Entity~}',this.value)">{~TS:DI-Opt:Record.Options~}</select>` },
+		{
+			Hash: 'DI-GUID-Parent',
+			Template: /*html*/`<div class="psd-guid-parent"><span class="psd-guid-sub">related to</span><select class="psd-select" onchange="_Pict.views['{~D:Record.WizardHash~}'].setParentEntity('{~D:Record.Entity~}',{~D:Record.Index~},this.value)">{~TS:DI-Opt:Record.EntityOptions~}</select><span class="psd-guid-sub">via</span><select class="psd-select" onchange="_Pict.views['{~D:Record.WizardHash~}'].setParentKey('{~D:Record.Entity~}',{~D:Record.Index~},this.value)">{~TS:DI-Opt:Record.KeyOptions~}</select><select class="psd-select" onchange="_Pict.views['{~D:Record.WizardHash~}'].setParentMode('{~D:Record.Entity~}',{~D:Record.Index~},this.value)">{~TS:DI-Opt:Record.ModeOptions~}</select><button type="button" class="psd-btn psd-btn-ghost psd-guid-rm" onclick="_Pict.views['{~D:Record.WizardHash~}'].removeStrategyParent('{~D:Record.Entity~}',{~D:Record.Index~})" title="Remove">&times;</button></div>`
+		},
+		{ Hash: 'DI-GUID-AddParent', Template: /*html*/`<div class="psd-guid-add"><select class="psd-select" onchange="if(this.value){_Pict.views['{~D:Record.WizardHash~}'].addStrategyParent('{~D:Record.Entity~}',this.value);this.value='';}">{~TS:DI-Opt:Record.Options~}</select></div>` },
+		{ Hash: 'DI-GUID-Preview', Template: /*html*/`<div class="psd-guid-preview">Example: <span class="psd-mono">{~D:Record.Preview~}</span></div>` },
+		{ Hash: 'DI-GUID-Warn', Template: /*html*/`<div class="psd-guid-warn">{~I:Warning~} <span>{~D:Record.Message~}</span></div>` },
 		{
 			Hash: 'DI-Map-Row',
 			Template: /*html*/`<div class="psd-map-row"><span class="psd-map-field">{~D:Record.Name~}{~NE:Record.Required^ <span class="psd-map-required">*</span>~}</span><select class="psd-select" onchange="_Pict.views['{~D:Record.WizardHash~}'].setMappingBinding('{~D:Record.Entity~}','{~D:Record.Name~}',this.value)">{~TS:DI-Opt:Record.Options~}</select></div>`
@@ -415,10 +437,127 @@ class PictViewDataImportWizard extends libPictView
 			if (typeof this.options.OnSchemaLoaded === 'function') { try { this.options.OnSchemaLoaded(this._schema); } catch (pError) { /* host */ } }
 			// Seed the mapping from the schema if the host gave no default mapping yet.
 			if (!tmpSession.Mapping.Order || tmpSession.Mapping.Order.length === 0) { tmpSession.Mapping = this._autoBuildMapping(this._schema); }
+			this._seedStrategyUI();
+			this._applyGUIDStrategy();
 			this._persist();
 			this._renderStepBody('mapping');
 			this._refreshAccordionChrome();
 		}).catch((pError) => { this._reportError(pError); });
+	}
+
+	/** Is the context-aware GUID strategy panel + composition enabled for this wizard? */
+	_strategyActive()
+	{
+		return !!this.options.GUIDStrategy;
+	}
+
+	/** Seed the editable per-entity GUID strategy UI model (host default, else prefixed + first column). */
+	_seedStrategyUI()
+	{
+		if (!this._strategyActive()) { return; }
+		const tmpSession = this._session();
+		tmpSession.GUIDStrategyUI = tmpSession.GUIDStrategyUI || {};
+		const tmpDefaults = this.options.GUIDStrategyDefault || {};
+		const tmpFirstColumn = ((tmpSession.DetectedColumns || [])[0] || {}).SourceName || '';
+		(tmpSession.Mapping.Order || []).forEach((pEntityName) =>
+		{
+			if (!tmpSession.GUIDStrategyUI[pEntityName])
+			{
+				tmpSession.GUIDStrategyUI[pEntityName] = tmpDefaults[pEntityName]
+					? JSON.parse(JSON.stringify(tmpDefaults[pEntityName]))
+					: { Mode: 'prefixed', OwnKeyColumn: tmpFirstColumn, Parents: [] };
+			}
+		});
+	}
+
+	/**
+	 * Compile the editable GUID strategy UI model (meadow-integration) against the schema's GUID column
+	 * sizes + attach it to each entity mapping. The transform then composes stable, length-safe GUIDs +
+	 * foreign-key fields instead of the flat GUIDTemplate.
+	 */
+	_applyGUIDStrategy()
+	{
+		if (!this._strategyActive()) { return; }
+		const tmpSession = this._session();
+		const tmpConfig = libStrategyApply.buildStrategyConfig(tmpSession.GUIDStrategyUI || {}, this.options.GUIDStrategyPrefix || 'UI');
+		const tmpResult = libStrategyApply.applyStrategy(tmpSession.Mapping, tmpConfig, this.options.ContextEntityCatalog, this._schema);
+		this._strategyWarnings = tmpResult.Warnings || [];
+	}
+
+	/** Mutable per-entity UI model accessor (creates a default if absent). */
+	_strategyUIEntity(pEntity)
+	{
+		const tmpSession = this._session();
+		tmpSession.GUIDStrategyUI = tmpSession.GUIDStrategyUI || {};
+		if (!tmpSession.GUIDStrategyUI[pEntity]) { tmpSession.GUIDStrategyUI[pEntity] = { Mode: 'prefixed', OwnKeyColumn: '', Parents: [] }; }
+		return tmpSession.GUIDStrategyUI[pEntity];
+	}
+
+	/** Recompile + re-render after any strategy panel edit. */
+	_afterStrategyEdit()
+	{
+		this._applyGUIDStrategy();
+		this._persist();
+		this._renderStepBody('mapping');
+	}
+
+	setStrategyMode(pEntity, pMode) { this._strategyUIEntity(pEntity).Mode = pMode; this._afterStrategyEdit(); }
+	setStrategyOwnKey(pEntity, pColumn) { this._strategyUIEntity(pEntity).OwnKeyColumn = pColumn; this._afterStrategyEdit(); }
+	addStrategyParent(pEntity, pParentEntity)
+	{
+		const tmpEntity = this._strategyUIEntity(pEntity);
+		tmpEntity.Parents = tmpEntity.Parents || [];
+		tmpEntity.Parents.push({ Entity: pParentEntity, KeyColumn: '', Mode: 'prefixed', CrossSession: true });
+		this._afterStrategyEdit();
+	}
+	removeStrategyParent(pEntity, pIndex) { const tmpEntity = this._strategyUIEntity(pEntity); if (tmpEntity.Parents) { tmpEntity.Parents.splice(Number(pIndex), 1); } this._afterStrategyEdit(); }
+	setParentEntity(pEntity, pIndex, pParentEntity) { const tmpParent = (this._strategyUIEntity(pEntity).Parents || [])[Number(pIndex)]; if (tmpParent) { tmpParent.Entity = pParentEntity; } this._afterStrategyEdit(); }
+	setParentKey(pEntity, pIndex, pColumn) { const tmpParent = (this._strategyUIEntity(pEntity).Parents || [])[Number(pIndex)]; if (tmpParent) { tmpParent.KeyColumn = pColumn; } this._afterStrategyEdit(); }
+	setParentMode(pEntity, pIndex, pMode) { const tmpParent = (this._strategyUIEntity(pEntity).Parents || [])[Number(pIndex)]; if (tmpParent) { tmpParent.Mode = pMode; } this._afterStrategyEdit(); }
+
+	/** Build the strategy-panel render data for one entity (mode + own-key + parents + live preview). */
+	_strategyEntityState(pEntityName, pSourceNames)
+	{
+		const tmpSession = this._session();
+		const tmpUI = (tmpSession.GUIDStrategyUI || {})[pEntityName] || { Mode: 'prefixed', OwnKeyColumn: '', Parents: [] };
+		const tmpCatalog = this.options.ContextEntityCatalog || {};
+		const tmpCatalogEntities = Object.keys(tmpCatalog);
+		const tmpModeOptions = (pSelected) => [ { Value: 'prefixed', Label: 'Prefixed (auto)', Selected: pSelected === 'prefixed' }, { Value: 'raw', Label: 'Raw GUID', Selected: pSelected === 'raw' }, { Value: 'rawid', Label: 'Raw ID', Selected: pSelected === 'rawid' } ];
+		const tmpColumnOptions = (pSelected) => [ { Value: '', Label: '(column)', Selected: !pSelected } ].concat(pSourceNames.map((pName) => ({ Value: pName, Label: pName, Selected: pName === pSelected })));
+
+		const tmpOwnKeySlot = ((tmpUI.Mode || 'prefixed') === 'prefixed')
+			? [ { WizardHash: this.options.WizardHash, Entity: pEntityName, Options: tmpColumnOptions(tmpUI.OwnKeyColumn) } ]
+			: [];
+
+		const tmpParents = (tmpUI.Parents || []).map((pParent, pIndex) => (
+			{
+				WizardHash: this.options.WizardHash, Entity: pEntityName, Index: pIndex,
+				EntityOptions: [ { Value: '', Label: '(entity)', Selected: !pParent.Entity } ].concat(tmpCatalogEntities.map((pName) => ({ Value: pName, Label: pName, Selected: pName === pParent.Entity }))),
+				KeyOptions: tmpColumnOptions(pParent.KeyColumn),
+				ModeOptions: tmpModeOptions(pParent.Mode || 'prefixed'),
+			}));
+
+		const tmpUsed = {};
+		(tmpUI.Parents || []).forEach((pParent) => { if (pParent.Entity) { tmpUsed[pParent.Entity] = true; } });
+		const tmpAddOptions = [ { Value: '', Label: '+ Related entity', Selected: true } ].concat(tmpCatalogEntities.filter((pName) => !tmpUsed[pName] && (pName !== pEntityName)).map((pName) => ({ Value: pName, Label: pName, Selected: false })));
+		const tmpAddParentSlot = (tmpAddOptions.length > 1) ? [ { WizardHash: this.options.WizardHash, Entity: pEntityName, Options: tmpAddOptions } ] : [];
+
+		let tmpPreviewSlot = [];
+		try
+		{
+			const tmpPreview = libStrategyApply.previewEntityGUID(tmpSession.GUIDStrategyUI || {}, this.options.GUIDStrategyPrefix || 'UI', tmpCatalog, this._schema, pEntityName, (tmpSession.SampleRows || [])[0] || {});
+			if (tmpPreview) { tmpPreviewSlot = [ { Preview: tmpPreview } ]; }
+		}
+		catch (pError) { /* preview is best-effort */ }
+
+		const tmpWarnings = (this._strategyWarnings || []).filter((pWarning) => pWarning.indexOf(`"${pEntityName}"`) >= 0).map((pWarning) => ({ Message: pWarning }));
+
+		return {
+			WizardHash: this.options.WizardHash, Entity: pEntityName,
+			ModeOptions: tmpModeOptions(tmpUI.Mode || 'prefixed'),
+			OwnKeySlot: tmpOwnKeySlot, Parents: tmpParents, AddParentSlot: tmpAddParentSlot,
+			PreviewSlot: tmpPreviewSlot, Warnings: tmpWarnings,
+		};
 	}
 
 	/** Auto-build a starting mapping from the schema: same-named source columns + a GUID template guess. */
@@ -492,7 +631,11 @@ class PictViewDataImportWizard extends libPictView
 				const tmpRequired = tmpSchemaEntity ? !!(tmpSchemaEntity.Fields.find((pField) => pField.Name === pFieldName) || {}).Required : false;
 				return { WizardHash: this.options.WizardHash, Entity: pEntityName, Name: pFieldName, Required: tmpRequired, Options: tmpOptions };
 			});
-			return { Entity: pEntityName, GUIDTemplate: tmpEntityMapping.GUIDTemplate || '', Fields: tmpFields };
+			return {
+				Entity: pEntityName, GUIDTemplate: tmpEntityMapping.GUIDTemplate || '', Fields: tmpFields,
+				LegacyGUIDSlot: this._strategyActive() ? [] : [ { GUIDTemplate: tmpEntityMapping.GUIDTemplate || '' } ],
+				StrategySlot: this._strategyActive() ? [ this._strategyEntityState(pEntityName, tmpSourceNames) ] : [],
+			};
 		});
 
 		return { WizardHash: this.options.WizardHash, Entities: tmpEntities, RawJSON: JSON.stringify(tmpMapping, null, 2) };
@@ -591,6 +734,11 @@ class PictViewDataImportWizard extends libPictView
 			URLPrefix: this.options.URLPrefix,
 			ComprehensionPushURL: this.options.ComprehensionPushURL,
 			AllowGUIDTruncation: this.options.AllowGUIDTruncation,
+			// When the GUID strategy owns length, the composer has already sized every GUID to its real
+			// column width. Hand the push target those widths so a marshaling adapter doesn't re-truncate a
+			// composed (already-fitting) GUID down to a smaller default — which would clip the entity's own
+			// distinguishing segment and collide. Only sent for the strategy path (no behavior change otherwise).
+			GUIDColumnSizes: (this.options.GUIDStrategy && this._schema) ? libStrategyApply.schemaSizes(this._schema) : undefined,
 			onProgress: (pPushed, pTotal) => { tmpSession.Push.Progress = { Pushed: pPushed, Total: pTotal }; this._renderStepBody('push'); },
 		};
 		Promise.resolve(tmpTarget.push(tmpSession.Comprehension, tmpContext)).then((pResult) =>
