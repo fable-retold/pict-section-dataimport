@@ -96,6 +96,10 @@ function buildStrategyConfig(pUIEntities, pPrefix)
 		tmpEntities[pEntityName] = {
 			Mode: tmpUI.Mode || 'prefixed',
 			OwnKeyColumn: tmpUI.OwnKeyColumn,
+			// Combinatorial own key: several columns concatenated, or a user-typed pict template. The engine's
+			// ownValueTemplate() prefers OwnKeyTemplate, then OwnKeyColumns, then the single OwnKeyColumn.
+			OwnKeyColumns: Array.isArray(tmpUI.OwnKeyColumns) ? tmpUI.OwnKeyColumns : undefined,
+			OwnKeyTemplate: tmpUI.OwnKeyTemplate,
 			OwnGUIDColumn: tmpUI.OwnGUIDColumn,
 			ContextEntities: tmpContextEntities,
 			ContextKeyColumns: tmpContextKeyColumns,
@@ -128,16 +132,14 @@ function previewGUID(pComposeSpec, pSampleRow)
 	const tmpRow = pSampleRow || {};
 	const tmpSegments = pComposeSpec.segments.map((pSegment) =>
 	{
-		const tmpMatch = /^\{~D:Record\.(.+)~\}$/.exec(pSegment.valueTemplate || '');
-		let tmpValue = '';
-		if (tmpMatch)
+		// Resolve EVERY `{~D:Record.<col>~}` tag in the segment (a segment can now be multiple columns or a
+		// typed template, not just one column) — a lightweight parseTemplate stand-in for the live preview.
+		// Any non-tag literal text in the template is kept verbatim.
+		const tmpValue = String(pSegment.valueTemplate || '').replace(/\{~D:Record\.([^~}]+)~\}/g, (pFull, pColumn) =>
 		{
-			tmpValue = (tmpRow[tmpMatch[1]] !== undefined && tmpRow[tmpMatch[1]] !== null) ? tmpRow[tmpMatch[1]] : '';
-		}
-		else if (pSegment.valueTemplate)
-		{
-			tmpValue = pSegment.valueTemplate;
-		}
+			const tmpCell = tmpRow[pColumn];
+			return (tmpCell !== undefined && tmpCell !== null) ? String(tmpCell) : '';
+		});
 		return { abbrev: pSegment.abbrev, value: tmpValue };
 	});
 	return libEngine.composeGUID({ prefix: pComposeSpec.prefix, separator: pComposeSpec.separator, maxLength: pComposeSpec.maxLength, hashLength: pComposeSpec.hashLength, segments: tmpSegments });

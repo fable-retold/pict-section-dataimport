@@ -143,7 +143,33 @@ suite
 				Expect(tmpEntity.StrategySlot, 'panel shown').to.have.length(1);
 				Expect(tmpEntity.LegacyGUIDSlot, 'flat GUID display hidden').to.have.length(0);
 				Expect(tmpEntity.StrategySlot[0].ModeOptions.find((pOption) => pOption.Selected).Value).to.equal('prefixed');
-				Expect(tmpEntity.StrategySlot[0].OwnKeySlot[0].Options.find((pOption) => pOption.Selected).Value, 'own key seeded to the first column').to.equal('LineId');
+				Expect(tmpEntity.StrategySlot[0].OwnKeySlot[0].ColumnItems[0].Options.find((pOption) => pOption.Selected).Value, 'own key seeded to the first column').to.equal('LineId');
+			}
+		);
+		test
+		(
+			'combinatorial own key: a second key column concatenates into the composed GUID',
+			() =>
+			{
+				const tmpWizard = newPanelWizard();
+				tmpWizard.addStrategyOwnKey('LineItem', 'ProjectCode');   // own key now [ LineId, ProjectCode ]
+				const tmpPanel = tmpWizard._mappingRenderState().Entities[0].StrategySlot[0];
+				Expect(tmpPanel.OwnKeySlot[0].ColumnItems, 'two own-key column pickers').to.have.length(2);
+				Expect(tmpPanel.PreviewSlot[0].Preview, 'own segment concatenates both columns').to.equal('UI_LI867530901278');
+			}
+		);
+		test
+		(
+			'combinatorial own key: template mode uses the typed pict template',
+			() =>
+			{
+				const tmpWizard = newPanelWizard();
+				tmpWizard.toggleStrategyOwnMode('LineItem');                       // columns -> template
+				tmpWizard.setStrategyOwnKeyTemplate('LineItem', '{~D:Record.qty~}');
+				const tmpPanel = tmpWizard._mappingRenderState().Entities[0].StrategySlot[0];
+				Expect(tmpPanel.OwnKeySlot[0].TemplateSlot, 'template input shown').to.have.length(1);
+				Expect(tmpPanel.OwnKeySlot[0].ColumnItems, 'column pickers hidden in template mode').to.have.length(0);
+				Expect(tmpPanel.PreviewSlot[0].Preview, 'template resolves against the sample row').to.equal('UI_LI5');
 			}
 		);
 		test

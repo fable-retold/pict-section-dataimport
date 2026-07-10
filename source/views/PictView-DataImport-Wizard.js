@@ -104,14 +104,18 @@ const _DEFAULT_CONFIGURATION =
 			Hash: 'DI-GUID-Panel',
 			Template: /*html*/`
 <div class="psd-guid">
-	<div class="psd-guid-line"><span class="psd-guid-label">Identifier</span><select class="psd-select" onchange="_Pict.views['{~D:Record.WizardHash~}'].setStrategyMode('{~D:Record.Entity~}',this.value)">{~TS:DI-Opt:Record.ModeOptions~}</select>{~TS:DI-GUID-OwnKey:Record.OwnKeySlot~}</div>
+	<div class="psd-guid-line"><span class="psd-guid-label">Identifier</span><select class="psd-select" onchange="_Pict.views['{~D:Record.WizardHash~}'].setStrategyMode('{~D:Record.Entity~}',this.value)">{~TS:DI-Opt:Record.ModeOptions~}</select>{~TS:DI-GUID-Own:Record.OwnKeySlot~}</div>
 	{~TS:DI-GUID-Parent:Record.Parents~}
 	{~TS:DI-GUID-AddParent:Record.AddParentSlot~}
 	{~TS:DI-GUID-Preview:Record.PreviewSlot~}
 	{~TS:DI-GUID-Warn:Record.Warnings~}
 </div>`
 		},
-		{ Hash: 'DI-GUID-OwnKey', Template: /*html*/`<span class="psd-guid-sub">keyed by</span><select class="psd-select" onchange="_Pict.views['{~D:Record.WizardHash~}'].setStrategyOwnKey('{~D:Record.Entity~}',this.value)">{~TS:DI-Opt:Record.Options~}</select>` },
+		{ Hash: 'DI-GUID-Own', Template: /*html*/`<span class="psd-guid-sub">keyed by</span>{~TS:DI-GUID-OwnCol:Record.ColumnItems~}{~TS:DI-GUID-OwnAdd:Record.AddColumnSlot~}{~TS:DI-GUID-OwnTpl:Record.TemplateSlot~}<button type="button" class="psd-btn psd-btn-ghost psd-guid-own-fx" onclick="_Pict.views['{~D:Record.WizardHash~}'].toggleStrategyOwnMode('{~D:Record.Entity~}')" title="Switch between columns and a typed template">{~D:Record.ToggleLabel~}</button>` },
+		{ Hash: 'DI-GUID-OwnCol', Template: /*html*/`<span class="psd-guid-owncol"><select class="psd-select" onchange="_Pict.views['{~D:Record.WizardHash~}'].setStrategyOwnKeyAt('{~D:Record.Entity~}',{~D:Record.Index~},this.value)">{~TS:DI-Opt:Record.Options~}</select>{~TS:DI-GUID-OwnColRm:Record.RemoveSlot~}</span>` },
+		{ Hash: 'DI-GUID-OwnColRm', Template: /*html*/`<button type="button" class="psd-btn psd-btn-ghost psd-guid-rm" onclick="_Pict.views['{~D:Record.WizardHash~}'].removeStrategyOwnKey('{~D:Record.Entity~}',{~D:Record.Index~})" title="Remove column">&times;</button>` },
+		{ Hash: 'DI-GUID-OwnAdd', Template: /*html*/`<select class="psd-select psd-guid-owadd" onchange="if(this.value){_Pict.views['{~D:Record.WizardHash~}'].addStrategyOwnKey('{~D:Record.Entity~}',this.value);this.value='';}">{~TS:DI-Opt:Record.Options~}</select>` },
+		{ Hash: 'DI-GUID-OwnTpl', Template: /*html*/`<input type="text" class="psd-input psd-guid-tpl" placeholder="{~D:Record.Placeholder~}" value="{~D:Record.Template~}" onchange="_Pict.views['{~D:Record.WizardHash~}'].setStrategyOwnKeyTemplate('{~D:Record.Entity~}',this.value)" />` },
 		{
 			Hash: 'DI-GUID-Parent',
 			Template: /*html*/`<div class="psd-guid-parent"><span class="psd-guid-sub">related to</span><select class="psd-select" onchange="_Pict.views['{~D:Record.WizardHash~}'].setParentEntity('{~D:Record.Entity~}',{~D:Record.Index~},this.value)">{~TS:DI-Opt:Record.EntityOptions~}</select><span class="psd-guid-sub">via</span><select class="psd-select" onchange="_Pict.views['{~D:Record.WizardHash~}'].setParentKey('{~D:Record.Entity~}',{~D:Record.Index~},this.value)">{~TS:DI-Opt:Record.KeyOptions~}</select><select class="psd-select" onchange="_Pict.views['{~D:Record.WizardHash~}'].setParentMode('{~D:Record.Entity~}',{~D:Record.Index~},this.value)">{~TS:DI-Opt:Record.ModeOptions~}</select><button type="button" class="psd-btn psd-btn-ghost psd-guid-rm" onclick="_Pict.views['{~D:Record.WizardHash~}'].removeStrategyParent('{~D:Record.Entity~}',{~D:Record.Index~})" title="Remove">&times;</button></div>`
@@ -465,7 +469,7 @@ class PictViewDataImportWizard extends libPictView
 			{
 				tmpSession.GUIDStrategyUI[pEntityName] = tmpDefaults[pEntityName]
 					? JSON.parse(JSON.stringify(tmpDefaults[pEntityName]))
-					: { Mode: 'prefixed', OwnKeyColumn: tmpFirstColumn, Parents: [] };
+					: { Mode: 'prefixed', OwnKeyColumn: tmpFirstColumn, OwnKeyColumns: tmpFirstColumn ? [ tmpFirstColumn ] : [], OwnKeyMode: 'columns', OwnKeyTemplate: '', Parents: [] };
 			}
 		});
 	}
@@ -489,7 +493,7 @@ class PictViewDataImportWizard extends libPictView
 	{
 		const tmpSession = this._session();
 		tmpSession.GUIDStrategyUI = tmpSession.GUIDStrategyUI || {};
-		if (!tmpSession.GUIDStrategyUI[pEntity]) { tmpSession.GUIDStrategyUI[pEntity] = { Mode: 'prefixed', OwnKeyColumn: '', Parents: [] }; }
+		if (!tmpSession.GUIDStrategyUI[pEntity]) { tmpSession.GUIDStrategyUI[pEntity] = { Mode: 'prefixed', OwnKeyColumn: '', OwnKeyColumns: [], OwnKeyMode: 'columns', OwnKeyTemplate: '', Parents: [] }; }
 		return tmpSession.GUIDStrategyUI[pEntity];
 	}
 
@@ -502,7 +506,49 @@ class PictViewDataImportWizard extends libPictView
 	}
 
 	setStrategyMode(pEntity, pMode) { this._strategyUIEntity(pEntity).Mode = pMode; this._afterStrategyEdit(); }
-	setStrategyOwnKey(pEntity, pColumn) { this._strategyUIEntity(pEntity).OwnKeyColumn = pColumn; this._afterStrategyEdit(); }
+
+	// Combinatorial own key (#1): the entity's GUID can be keyed by ONE column, SEVERAL columns concatenated,
+	// or a user-typed pict template. OwnKeyColumns is the column list; OwnKeyTemplate (template mode) wins in
+	// the engine's ownValueTemplate(). OwnKeyColumn is kept in sync for backward compatibility.
+	/** The own-key column list (migrating a legacy single OwnKeyColumn on first access). */
+	_ownColumns(pEntity)
+	{
+		const tmpEntity = this._strategyUIEntity(pEntity);
+		if (!Array.isArray(tmpEntity.OwnKeyColumns))
+		{
+			tmpEntity.OwnKeyColumns = tmpEntity.OwnKeyColumn ? [ tmpEntity.OwnKeyColumn ] : [];
+		}
+		return tmpEntity.OwnKeyColumns;
+	}
+	_syncOwnSingle(pEntity) { const tmpEntity = this._strategyUIEntity(pEntity); tmpEntity.OwnKeyColumn = this._ownColumns(pEntity)[0] || ''; }
+	setStrategyOwnKey(pEntity, pColumn) { const tmpEntity = this._strategyUIEntity(pEntity); tmpEntity.OwnKeyColumns = pColumn ? [ pColumn ] : []; tmpEntity.OwnKeyColumn = pColumn; this._afterStrategyEdit(); }
+	setStrategyOwnKeyAt(pEntity, pIndex, pColumn)
+	{
+		const tmpColumns = this._ownColumns(pEntity);
+		if (pColumn) { tmpColumns[Number(pIndex)] = pColumn; } else { tmpColumns.splice(Number(pIndex), 1); }
+		this._syncOwnSingle(pEntity); this._afterStrategyEdit();
+	}
+	addStrategyOwnKey(pEntity, pColumn) { this._ownColumns(pEntity).push(pColumn); this._syncOwnSingle(pEntity); this._afterStrategyEdit(); }
+	removeStrategyOwnKey(pEntity, pIndex) { this._ownColumns(pEntity).splice(Number(pIndex), 1); this._syncOwnSingle(pEntity); this._afterStrategyEdit(); }
+	setStrategyOwnKeyTemplate(pEntity, pTemplate) { this._strategyUIEntity(pEntity).OwnKeyTemplate = pTemplate; this._afterStrategyEdit(); }
+	toggleStrategyOwnMode(pEntity)
+	{
+		const tmpEntity = this._strategyUIEntity(pEntity);
+		if (tmpEntity.OwnKeyMode === 'template')
+		{
+			tmpEntity.OwnKeyMode = 'columns';
+			tmpEntity.OwnKeyTemplate = '';   // columns win once template is cleared
+		}
+		else
+		{
+			tmpEntity.OwnKeyMode = 'template';
+			if (!tmpEntity.OwnKeyTemplate)
+			{
+				tmpEntity.OwnKeyTemplate = this._ownColumns(pEntity).map((pColumn) => `{~D:Record.${pColumn}~}`).join('');
+			}
+		}
+		this._afterStrategyEdit();
+	}
 	addStrategyParent(pEntity, pParentEntity)
 	{
 		const tmpEntity = this._strategyUIEntity(pEntity);
@@ -525,9 +571,26 @@ class PictViewDataImportWizard extends libPictView
 		const tmpModeOptions = (pSelected) => [ { Value: 'prefixed', Label: 'Prefixed (auto)', Selected: pSelected === 'prefixed' }, { Value: 'raw', Label: 'Raw GUID', Selected: pSelected === 'raw' }, { Value: 'rawid', Label: 'Raw ID', Selected: pSelected === 'rawid' } ];
 		const tmpColumnOptions = (pSelected) => [ { Value: '', Label: '(column)', Selected: !pSelected } ].concat(pSourceNames.map((pName) => ({ Value: pName, Label: pName, Selected: pName === pSelected })));
 
-		const tmpOwnKeySlot = ((tmpUI.Mode || 'prefixed') === 'prefixed')
-			? [ { WizardHash: this.options.WizardHash, Entity: pEntityName, Options: tmpColumnOptions(tmpUI.OwnKeyColumn) } ]
-			: [];
+		// Own-key slot: only prefixed mode composes its own GUID. It can be one column, several columns
+		// (concatenated), or a typed template — see #1 combinatorial GUID.
+		let tmpOwnKeySlot = [];
+		if ((tmpUI.Mode || 'prefixed') === 'prefixed')
+		{
+			const tmpIsTemplate = (tmpUI.OwnKeyMode === 'template');
+			const tmpOwnCols = Array.isArray(tmpUI.OwnKeyColumns) ? tmpUI.OwnKeyColumns : (tmpUI.OwnKeyColumn ? [ tmpUI.OwnKeyColumn ] : []);
+			const tmpColumnItems = tmpIsTemplate ? [] : tmpOwnCols.map((pColumn, pIndex) => (
+				{
+					WizardHash: this.options.WizardHash, Entity: pEntityName, Index: pIndex,
+					Options: tmpColumnOptions(pColumn),
+					RemoveSlot: (tmpOwnCols.length > 1) ? [ { WizardHash: this.options.WizardHash, Entity: pEntityName, Index: pIndex } ] : [],
+				}));
+			const tmpUsedOwn = {};
+			tmpOwnCols.forEach((pColumn) => { if (pColumn) { tmpUsedOwn[pColumn] = true; } });
+			const tmpAddOwnOptions = [ { Value: '', Label: '+ column', Selected: true } ].concat(pSourceNames.filter((pName) => !tmpUsedOwn[pName]).map((pName) => ({ Value: pName, Label: pName, Selected: false })));
+			const tmpAddColumnSlot = (!tmpIsTemplate && (tmpAddOwnOptions.length > 1)) ? [ { WizardHash: this.options.WizardHash, Entity: pEntityName, Options: tmpAddOwnOptions } ] : [];
+			const tmpTemplateSlot = tmpIsTemplate ? [ { WizardHash: this.options.WizardHash, Entity: pEntityName, Template: tmpUI.OwnKeyTemplate || '', Placeholder: 'e.g. {~D:Record.District~}-{~D:Record.Code~}' } ] : [];
+			tmpOwnKeySlot = [ { WizardHash: this.options.WizardHash, Entity: pEntityName, ColumnItems: tmpColumnItems, AddColumnSlot: tmpAddColumnSlot, TemplateSlot: tmpTemplateSlot, ToggleLabel: tmpIsTemplate ? 'use columns' : 'ƒ template' } ];
+		}
 
 		const tmpParents = (tmpUI.Parents || []).map((pParent, pIndex) => (
 			{

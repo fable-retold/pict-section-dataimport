@@ -79,6 +79,10 @@ module.exports = /*css*/`
 .psd-guid-parent { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; padding-left: 0.5rem; }
 .psd-guid-rm { padding: 0 0.45rem; line-height: 1.4; }
 .psd-guid-add { padding-left: 0.5rem; }
+.psd-guid-owncol { display: inline-flex; align-items: center; gap: 0.15rem; }
+.psd-guid-owadd { max-width: 8rem; opacity: 0.85; }
+.psd-guid-tpl { min-width: 16rem; font-family: var(--theme-typography-family-mono, monospace); }
+.psd-guid-own-fx { padding: 0 0.5rem; font-size: var(--theme-typography-size-sm, 0.78rem); }
 .psd-guid-preview { font-size: var(--theme-typography-size-sm, 0.82rem); color: var(--theme-color-text-secondary, #6b7686); }
 .psd-guid-warn { display: flex; align-items: center; gap: 0.4rem; font-size: var(--theme-typography-size-sm, 0.82rem); color: var(--theme-color-status-warning, #b8860b); }
 `;
